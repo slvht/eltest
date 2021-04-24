@@ -1,0 +1,59 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+
+# Private Network
+NET = "192.168.4."
+
+# Commun Mask
+MASK = "255.255.255.0"
+
+
+VAGRANT_EXPERIMENTAL="disks"
+
+Vagrant.configure("2") do |config|
+
+  config.vm.define "el7" do |el7|
+
+
+    el7.vm.box   = "generic/centos7"
+    el7.vm.guest = "redhat"
+
+    el7.vm.hostname = "el7"
+
+    # .10 as IP 
+    el7.vm.network 'private_network', ip: NET +  "10", netmask: MASK
+
+    #
+    # Run Ansible from the Vagrant Host
+    #
+    config.vm.provision "ansible" do |ansible|
+      ansible.playbook = "provisioning/playbook.yml"
+    end
+
+    config.vm.provider "virtualbox" do |v|
+      v.gui = false
+
+        v.memory = 1024
+      v.cpus = 2
+
+        v.customize ['modifyvm',:id, '--nic2', 'intnet']
+
+
+      v.customize ["storagectl", :id, "--name", "SATA Controller", "--add", "sata", '--portcount', 2]
+
+      (1..2).each do |i|
+
+        unless File.exist?("./tmp/disk_#{i}.vdi")
+          v.customize ['createhd', '--filename', "./tmp/disk_#{i}.vdi", '--size', 5 * 1024]
+        end
+
+        v.customize ['storageattach', :id,  '--storagectl', 'SATA Controller', '--port', i , '--device', 0, '--type', 'hdd', '--medium', "./tmp/disk_#{i}.vdi"]
+
+      end
+
+    end
+
+  end
+
+end

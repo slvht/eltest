@@ -1,0 +1,12 @@
+---
+- name: Test play
+  hosts: all
+  tasks:
+    - name: Check uptime
+      shell:
+        cmd: uptime
+      register: uptime_result
+
+    - name: Shows uptime
+      debug:
+        msg: "Uptime {{ uptime_result.stdout }}"
